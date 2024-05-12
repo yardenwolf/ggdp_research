@@ -36,8 +36,6 @@ def calculate_energy_cost(wte: float, year: int, currency: str, elec_consumption
     :return:
     """
     #need to check that we have all the data to actually calculate this
-    if year == 2007 and False:
-        print('1234')
     current_consumption = elec_consumption[elec_consumption['year'] == year]
     if current_consumption.empty:
         return nan
