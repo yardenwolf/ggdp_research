@@ -4,3 +4,4 @@ notebook
 openpyxl
 statsmodels
 matplotlib
+scipy
