@@ -64,7 +64,7 @@ def process_electricity_df_semi_annually(country_code: str, elec_df: pd.DataFram
     return annual_data
 
 
-def process_electricity_semi_annual_imputated_df(elec_df: pd.DataFrame) -> pd.DataFrame:
+def process_electricity_semi_annual_imputed_df(elec_df: pd.DataFrame) -> pd.DataFrame:
     elec_df.loc[:, 'year'] = elec_df['year'].apply(lambda x: x[:x.find('-')])
     return elec_df.groupby(['currency', 'tax_tier', 'year'], as_index=False)['price'].mean()
 

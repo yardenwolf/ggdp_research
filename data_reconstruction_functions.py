@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from electrcity_processing_functions import process_electricity_semi_annual_imputated_df, tax_tier_map
+from electrcity_processing_functions import process_electricity_semi_annual_imputed_df, tax_tier_map
 
 import pandas as pd
 from statsmodels.regression.linear_model import OLSResults
@@ -36,39 +36,39 @@ def fill_missing_values(values_df: pd.DataFrame,
     return True
 
 
-def format_and_calculate_electricity_df(pre_2007_imputated_df: pd.DataFrame, post_2007_df: pd.DataFrame):
+def format_and_calculate_electricity_df(pre_2007_imputed_df: pd.DataFrame, post_2007_df: pd.DataFrame):
     """
 
-    :param pre_2007_imputated_df:
+    :param pre_2007_imputed_df:
     :param post_2007_df:
     :return:
     """
 
-    pre_2007_imputated_cols = pre_2007_imputated_df.columns.values.tolist()
+    pre_2007_imputed_cols = pre_2007_imputed_df.columns.values.tolist()
 
-    pre_2007_imputated_ggdp_format = pd.melt(pre_2007_imputated_df, id_vars=['year'],
-                                             value_vars=pre_2007_imputated_cols, var_name='tax_tier',
+    pre_2007_imputed_ggdp_format = pd.melt(pre_2007_imputed_df, id_vars=['year'],
+                                             value_vars=pre_2007_imputed_cols, var_name='tax_tier',
                                              value_name='price')
-    # pre_2007_imputated_ggdp_format = pre_2007_imputated_ggdp_format.replace(tax_tier_map)
-    pre_2007_imputated_ggdp_format['tax_tier'] = pre_2007_imputated_ggdp_format['tax_tier'].apply(lambda x: float(x))
-    pre_2007_imputated_ggdp_format['currency'] = 'EUR'
-    pre_2007_imputated_ggdp_format_processed = process_electricity_semi_annual_imputated_df(
-        pre_2007_imputated_ggdp_format)
+    # pre_2007_imputed_ggdp_format = pre_2007_imputed_ggdp_format.replace(tax_tier_map)
+    pre_2007_imputed_ggdp_format['tax_tier'] = pre_2007_imputed_ggdp_format['tax_tier'].apply(lambda x: float(x))
+    pre_2007_imputed_ggdp_format['currency'] = 'EUR'
+    pre_2007_imputed_ggdp_format_processed = process_electricity_semi_annual_imputed_df(
+        pre_2007_imputed_ggdp_format)
 
     # deleting overlap in pre-2007 data with post_2007 data
     # there's overlap with the two dataframe: both have 2007 data
-    imputated_index_to_drop = pre_2007_imputated_ggdp_format_processed[
-        pre_2007_imputated_ggdp_format_processed['year'] == '2007'].index
-    pre_2007_imputated_ggdp_format_processed = pre_2007_imputated_ggdp_format_processed.drop(
-        index=imputated_index_to_drop)
+    imputed_index_to_drop = pre_2007_imputed_ggdp_format_processed[
+        pre_2007_imputed_ggdp_format_processed['year'] == '2007'].index
+    pre_2007_imputed_ggdp_format_processed = pre_2007_imputed_ggdp_format_processed.drop(
+        index=imputed_index_to_drop)
 
     # maybe add a way to check overlap of dataframes
-    # overlapping_rows_after_drop = pd.merge(elec_hh_post_2007_replaced, fi_hh_pre_2007_imputated_ggdp_format_processed,
+    # overlapping_rows_after_drop = pd.merge(elec_hh_post_2007_replaced, fi_hh_pre_2007_imputed_ggdp_format_processed,
     #                                        on=['year', 'tax_tier'], how='inner')
 
-    elec_imputated = pd.concat([pre_2007_imputated_ggdp_format_processed, post_2007_df])
-    elec_imputated = elec_imputated.replace(tax_tier_map)
-    elec_imputated['year'] = elec_imputated['year'].apply(lambda x: float(x))
-    elec_imputated['tax_tier'] = elec_imputated['tax_tier'].apply(lambda x: float(x))
+    elec_imputed = pd.concat([pre_2007_imputed_ggdp_format_processed, post_2007_df])
+    elec_imputed = elec_imputed.replace(tax_tier_map)
+    elec_imputed['year'] = elec_imputed['year'].apply(lambda x: float(x))
+    elec_imputed['tax_tier'] = elec_imputed['tax_tier'].apply(lambda x: float(x))
     # droping any rows that having missing values because they won't help calculate prices
-    return elec_imputated.dropna(axis=0, how='any')
+    return elec_imputed.dropna(axis=0, how='any')
