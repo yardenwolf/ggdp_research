@@ -7,14 +7,17 @@ from sklearn.decomposition import PCA
 pca = PCA(n_components=1)
 
 
-def read_and_process_data(path: str, date_column_name: str, price_column_name: str, rename_map: dict) -> pd.DataFrame:
+def read_and_process_data(path: str, date_column_name: str, price_column_name: str, rename_map: dict,
+                          timestamp_format: str = None) -> pd.DataFrame:
     df = pd.read_csv(path)
-    processed_data: pd.DataFrame = process_data_for_fci(df, date_column_name, price_column_name)
+    processed_data: pd.DataFrame = process_data_for_fci(df, date_column_name, price_column_name,
+                                                        timestamp_format=timestamp_format)
     return processed_data.rename(columns=rename_map)
 
 
-def process_data_for_fci(df: pd.DataFrame, date_column_name: str, price_column_name: str) -> pd.DataFrame:
-    df['year'] = pd.to_datetime(df[date_column_name])
+def process_data_for_fci(df: pd.DataFrame, date_column_name: str, price_column_name: str,
+                         timestamp_format: Optional[str] = None) -> pd.DataFrame:
+    df['year'] = pd.to_datetime(df[date_column_name], format=timestamp_format)
     df[price_column_name] = pd.to_numeric(df[price_column_name])
     agg_df = df.groupby(df['year'].dt.year)[price_column_name].mean().to_frame()
     agg_df = agg_df.rename(columns={price_column_name: f'price'})
@@ -40,9 +43,17 @@ def join_dfs(df_1: pd.DataFrame, df_2: pd.DataFrame) -> pd.DataFrame:
 
 
 def serial_join(df_list: List[pd.DataFrame]):
+    def join_dfs(df_1, df_2) -> pd.DataFrame:
+        if isinstance(df_1, pd.Series):
+            df_1 = df_1.to_frame()
+        if isinstance(df_2, pd.Series):
+            df_2 = df_2.to_frame()
+        return df_1.join(df_2)
+
     df_1: pd.DataFrame
     df_2: pd.DataFrame
-    return functools.reduce(lambda df_1, df_2: df_1.join(df_2), df_list)
+    # return functools.reduce(lambda df_1, df_2: df_1.join(df_2), df_list)
+    return functools.reduce(lambda df_1, df_2: join_dfs(df_1, df_2), df_list)
 
 
 def create_wa_fci_from_data(joint_df: pd.DataFrame, fci_weights: dict) -> Optional[pd.Series]:
@@ -61,3 +72,11 @@ def create_wa_fci_from_data(joint_df: pd.DataFrame, fci_weights: dict) -> Option
     for factor in fci_weights:
         fci_df['fci'] += fci_weights_normalized[factor] * fci_df[factor]
     return fci_df['fci']
+
+
+def transform_to_fci(df: pd.DataFrame, fci_name: str = 'fci') -> pd.DataFrame:
+    df_normalized = (df - df.mean()) / df.std()
+    # calculating the fci using all the data
+    fci_data = df_normalized @ pca.fit(df_normalized).components_.transpose()
+    fci_data.columns = [fci_name]
+    return fci_data
