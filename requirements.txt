@@ -6,3 +6,5 @@ statsmodels
 matplotlib
 scipy
 scikit-learn
+tsbootstrap
+arch==7.0.0
