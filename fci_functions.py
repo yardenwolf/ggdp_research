@@ -3,24 +3,31 @@ import functools
 
 import pandas as pd
 from sklearn.decomposition import PCA
+import numpy as np
 
 pca = PCA(n_components=1)
 
 
 def read_and_process_data(path: str, date_column_name: str, price_column_name: str, rename_map: dict,
-                          timestamp_format: str = None) -> pd.DataFrame:
+                          timestamp_format: str = None, freq='year') -> pd.DataFrame:
     df = pd.read_csv(path)
     processed_data: pd.DataFrame = process_data_for_fci(df, date_column_name, price_column_name,
-                                                        timestamp_format=timestamp_format)
+                                                        timestamp_format=timestamp_format, freq=freq)
     return processed_data.rename(columns=rename_map)
 
 
 def process_data_for_fci(df: pd.DataFrame, date_column_name: str, price_column_name: str,
-                         timestamp_format: Optional[str] = None) -> pd.DataFrame:
-    df['year'] = pd.to_datetime(df[date_column_name], format=timestamp_format)
+                         freq: str, timestamp_format: Optional[str] = None) -> pd.DataFrame:
+    df['date'] = pd.to_datetime(df[date_column_name], format=timestamp_format)
     df[price_column_name] = pd.to_numeric(df[price_column_name])
-    agg_df = df.groupby(df['year'].dt.year)[price_column_name].mean().to_frame()
+    if freq == 'quarter':
+        agg_df = df.groupby(df['date'].dt.to_period('Q'))[price_column_name].mean().to_frame()
+    else:
+        agg_df = df.groupby(df['date'].dt.to_period('Y'))[price_column_name].mean().to_frame()
+
+    agg_df.index = agg_df.index.to_timestamp()
     agg_df = agg_df.rename(columns={price_column_name: f'price'})
+    # agg_df['quarter'] = agg_df['date'].dt.quarter
     agg_df['growth'] = agg_df['price'] / agg_df['price'].shift(1) - 1
     # agg_df = agg_df.rename(columns={'growth': f'{prefix_name}_growth', 'price': f'{prefix_name}_price'})
     return agg_df.dropna(axis=0, how='any')
@@ -76,7 +83,36 @@ def create_wa_fci_from_data(joint_df: pd.DataFrame, fci_weights: dict) -> Option
 
 def transform_to_fci(df: pd.DataFrame, fci_name: str = 'fci') -> pd.DataFrame:
     df_normalized = (df - df.mean()) / df.std()
+    if isinstance(df, pd.Series):
+        return df_normalized.rename(fci_name)
     # calculating the fci using all the data
     fci_data = df_normalized @ pca.fit(df_normalized).components_.transpose()
     fci_data.columns = [fci_name]
     return fci_data
+
+
+# def normalize_date_index(df: pd.DataFrame, date_format="%Y-%m-%d") -> pd.DataFrame:
+#     current_index = df.index
+#     if isinstance(df.index, pd.DatetimeIndex):
+#         current_index = df.index.strftime(date_format)
+#
+#     for date in current_index:
+#         if date
+
+
+def Lag(x, n):
+    if n == 0:
+        return x
+    return x.shift(n)
+
+
+def calculate_ewma_volatility(returns_df: pd.Series, gamma: float):
+    returns_df = returns_df - returns_df.mean()
+    returns_var = returns_df.apply(lambda x: x ** 2)
+    vol_list = [returns_var[0]]
+    for i in range(len(returns_df)):
+        curr_vol = (1 - gamma) * returns_var[i - 1] + gamma * vol_list[-1]
+        vol_list.append(curr_vol)
+    vol_series = pd.Series(vol_list[1:]).rename(f"ewma_vol_{returns_df.name}")
+    vol_series.index = returns_df.index
+    return np.sqrt(vol_series)
