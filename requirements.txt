@@ -8,3 +8,5 @@ scipy
 scikit-learn
 tsbootstrap
 arch==7.0.0
+seaborn
+Skewt-Scipy

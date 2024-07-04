@@ -1,0 +1,77 @@
+---
+title: "rss_skewed_t_min"
+output: html_document
+date: "2024-07-03"
+---
+```{r}
+print('1234')
+```
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+library(readr)
+library(sn)
+#library(optim)
+
+#loading and organizing the data. the data is generated using python.
+#This code should be run after the python pipeline
+
+q_predict_1_quart <- read_csv("C:/Users/yarde/PycharmProjects/ggdp_research/gar_analysis/q_predict_1_quart.csv")
+q_predict_1_quart <- as.data.frame(q_predict_1_quart)
+
+q_predict_4_quart <- read_csv("C:/Users/yarde/PycharmProjects/ggdp_research/gar_analysis/q_predict_4_quart.csv")
+q_predict_4_quart <- as.data.frame(q_predict_4_quart)
+
+
+
+parameters <- data.frame("location" = rep(NA, nrow(q_predict_1_quart)),
+                         "scale" = rep(NA, nrow(q_predict_1_quart)),
+                         "shape" = rep(NA, nrow(q_predict_1_quart)),
+                         "freedom" = rep(NA, nrow(q_predict_1_quart)),
+                         "DATE" = q_predict_1_quart$Quarter[1:nrow(q_predict_1_quart)])
+
+
+
+
+
+RSS_Loss <- function(x, q_hat_vec, freedom){
+  distance <- q_hat_vec - sn::qst(c(0.05,0.25,0.75,0.95),
+                        xi = x[1], 
+                        omega = x[2],
+                        alpha = x[3],
+                        nu = freedom)
+    
+  return(sum(distance^2))
+}
+
+
+
+# One Quarter ahead Parameter Estimation
+  print("Estimating One Quarter Ahead Distribution")
+  for(i in 1:nrow(q_predict_1_quart)){
+    print(paste("Estimating case ", i, " out of ", nrow(q_predict_1_quart)))
+    q_hat <- c(q_predict_1_quart$'0.05'[i], q_predict_1_quart$'0.25'[i], q_predict_1_quart$'0.75'[i], q_predict_1_quart$'0.95'[i])
+    sol <- 1e10
+    for (f in 1:30){
+      opt <- optim(c(0,1,0),
+                   RSS_Loss, 
+                   method = "L-BFGS-B",
+                   lower = c(-20, 0, -30),
+                   upper = c(20, 50, 30),
+                   q=q_hat,
+                   freedom = f)
+      
+      if (as.numeric(opt$value) < sol){
+        
+        sol <- opt$value
+        
+        parameters$location[i] <- opt$par[1]
+        parameters$scale[i] <- opt$par[2]
+        parameters$shape[i] <- opt$par[3]
+        parameters$ freedom[i] <- f
+      }
+    }
+  }
+  write.csv(parameters, file = "../storage/parameters_in_sample.csv")
+
+```

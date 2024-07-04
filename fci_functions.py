@@ -100,12 +100,6 @@ def transform_to_fci(df: pd.DataFrame, fci_name: str = 'fci') -> pd.DataFrame:
 #         if date
 
 
-def Lag(x, n):
-    if n == 0:
-        return x
-    return x.shift(n)
-
-
 def calculate_ewma_volatility(returns_df: pd.Series, gamma: float):
     returns_df = returns_df - returns_df.mean()
     returns_var = returns_df.apply(lambda x: x ** 2)
