@@ -47,7 +47,7 @@ def fit_qr(q: float, formula: str, data: pd.DataFrame) -> QuantileRegRes:
 
 def estimate_quantiles(quantiles: np.ndarray, formula: str, data: pd.DataFrame) -> Tuple[List[QuantileRegRes], dict]:
     qr_res_list = [fit_qr(q, formula, data) for q in quantiles]
-    models_summary_df = pd.DataFrame([res.to_list() for res in qr_res_list], columns=['q', 'a', 'b', 'lb', 'ub'])
+    # models_summary_df = pd.DataFrame([res.to_list() for res in qr_res_list], columns=['q', 'a', 'b', 'lb', 'ub'])
 
     # OLS prediction as benchmark
     ols_model = smf.ols(formula, data=data, missing='drop').fit()

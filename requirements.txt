@@ -10,3 +10,4 @@ tsbootstrap
 arch==7.0.0
 seaborn
 Skewt-Scipy
+evt==0.0.2
