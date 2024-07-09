@@ -13,6 +13,8 @@ class QuantileRegRes():
     a: float
     b: float
     b_ci: List[float]
+    a_p_value: float
+    b_p_value: float
 
     def to_list(self) -> list:
         return [self.q, self.a, self.b, *self.b_ci]
@@ -36,13 +38,15 @@ def fit_qr(q: float, formula: str, data: pd.DataFrame) -> QuantileRegRes:
     """
     mod = smf.quantreg(formula, data=data, missing='drop')
     res = mod.fit(q=q)
-    print(f"quantile: {q}")
-    print(res.summary())
+    # print(f"quantile: {q}")
+    # print(res.summary())
     param_names = res.params.index.to_list()
     return QuantileRegRes(q=q,
-                          a=res.params['Intercept'],
+                          a=res.params[param_names[0]],
                           b=res.params[param_names[1]],
-                          b_ci=res.conf_int().loc[param_names[1]].to_list())
+                          b_ci=res.conf_int().loc[param_names[1]].to_list(),
+                          a_p_value=res.pvalues[param_names[0]],
+                          b_p_value=res.pvalues[param_names[1]])
 
 
 def estimate_quantiles(quantiles: np.ndarray, formula: str, data: pd.DataFrame) -> Tuple[List[QuantileRegRes], dict]:
