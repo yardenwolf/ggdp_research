@@ -25,17 +25,11 @@ q_predict_4_quart <- read_csv("C:/Users/yarde/PycharmProjects/ggdp_research/gar_
 q_predict_4_quart <- as.data.frame(q_predict_4_quart)
 
 
-
-estimate_skewed_t_destribution <- function(data){
-
-
 parameters <- data.frame("location" = rep(NA, nrow(q_predict_1_quart)),
                          "scale" = rep(NA, nrow(q_predict_1_quart)),
                          "shape" = rep(NA, nrow(q_predict_1_quart)),
                          "freedom" = rep(NA, nrow(q_predict_1_quart)),
                          "DATE" = q_predict_1_quart$Quarter[1:nrow(q_predict_1_quart)])
-
-
 
 
 
