@@ -13,6 +13,8 @@ class QuantileRegRes():
     a: float
     b: float
     b_ci: List[float]
+    a_p_value: float
+    b_p_value: float
 
     def to_list(self) -> list:
         return [self.q, self.a, self.b, *self.b_ci]
@@ -36,23 +38,25 @@ def fit_qr(q: float, formula: str, data: pd.DataFrame) -> QuantileRegRes:
     """
     mod = smf.quantreg(formula, data=data, missing='drop')
     res = mod.fit(q=q)
-    print(f"quantile: {q}")
-    print(res.summary())
+    # print(f"quantile: {q}")
+    # print(res.summary())
     param_names = res.params.index.to_list()
     return QuantileRegRes(q=q,
-                          a=res.params['Intercept'],
+                          a=res.params[param_names[0]],
                           b=res.params[param_names[1]],
-                          b_ci=res.conf_int().loc[param_names[1]].to_list())
+                          b_ci=res.conf_int().loc[param_names[1]].to_list(),
+                          a_p_value=res.pvalues[param_names[0]],
+                          b_p_value=res.pvalues[param_names[1]])
 
 
-def estimate_quantiles(quantiles: np.ndarray, formula: str, data: pd.DataFrame) -> Tuple[List[QuantileRegRes], dict]:
+def estimate_quantiles(quantiles: np.ndarray, formula: str, data: pd.DataFrame, alpha=0.05) -> Tuple[List[QuantileRegRes], dict]:
     qr_res_list = [fit_qr(q, formula, data) for q in quantiles]
-    models_summary_df = pd.DataFrame([res.to_list() for res in qr_res_list], columns=['q', 'a', 'b', 'lb', 'ub'])
+    # models_summary_df = pd.DataFrame([res.to_list() for res in qr_res_list], columns=['q', 'a', 'b', 'lb', 'ub'])
 
     # OLS prediction as benchmark
     ols_model = smf.ols(formula, data=data, missing='drop').fit()
     ols_param_names = ols_model.params.index.to_list()
-    ols_ci = ols_model.conf_int().loc[ols_param_names[1]].to_list()
+    ols_ci = ols_model.conf_int(alpha=alpha).loc[ols_param_names[1]].to_list()
     ols_model_summary = dict(a=ols_model.params[0], b=ols_model.params[1], lb=ols_ci[0], ub=ols_ci[1])
     return qr_res_list, ols_model_summary
 

@@ -4,10 +4,12 @@ output: html_document
 date: "2024-07-03"
 ---
 ```{r}
-print('1234')
+# Get the file path of the current script
+setwd("C:/Users/yarde/PycharmProjects/ggdp_research/gar_analysis")
 ```
 
 ```{r}
+
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 library(readr)
 library(sn)
@@ -23,14 +25,11 @@ q_predict_4_quart <- read_csv("C:/Users/yarde/PycharmProjects/ggdp_research/gar_
 q_predict_4_quart <- as.data.frame(q_predict_4_quart)
 
 
-
 parameters <- data.frame("location" = rep(NA, nrow(q_predict_1_quart)),
                          "scale" = rep(NA, nrow(q_predict_1_quart)),
                          "shape" = rep(NA, nrow(q_predict_1_quart)),
                          "freedom" = rep(NA, nrow(q_predict_1_quart)),
                          "DATE" = q_predict_1_quart$Quarter[1:nrow(q_predict_1_quart)])
-
-
 
 
 
@@ -44,13 +43,13 @@ RSS_Loss <- function(x, q_hat_vec, freedom){
   return(sum(distance^2))
 }
 
-
+estimate_skewed_t_destribution <- function(data){
 
 # One Quarter ahead Parameter Estimation
   print("Estimating One Quarter Ahead Distribution")
-  for(i in 1:nrow(q_predict_1_quart)){
-    print(paste("Estimating case ", i, " out of ", nrow(q_predict_1_quart)))
-    q_hat <- c(q_predict_1_quart$'0.05'[i], q_predict_1_quart$'0.25'[i], q_predict_1_quart$'0.75'[i], q_predict_1_quart$'0.95'[i])
+  for(i in 1:nrow(data)){
+    print(paste("Estimating case ", i, " out of ", nrow(data)))
+    q_hat <- c(data$'0.05'[i], data$'0.25'[i], data$'0.75'[i], data$'0.95'[i])
     sol <- 1e10
     for (f in 1:30){
       opt <- optim(c(0,1,0),
@@ -72,6 +71,15 @@ RSS_Loss <- function(x, q_hat_vec, freedom){
       }
     }
   }
-  write.csv(parameters, file = "../storage/parameters_in_sample.csv")
+  return(parameters)
+  
+}
+
+skew_t_dist_1_quarter <- estimate_skewed_t_destribution(q_predict_1_quart)
+write.csv(skew_t_dist_1_quarter, file = "skew_t_dist_1_quarter.csv")
+skew_t_dist_4_quarter <- estimate_skewed_t_destribution(q_predict_4_quart)
+write.csv(skew_t_dist_4_quarter, file = "skew_t_dist_4_quarter.csv")
+
+ 
 
 ```
